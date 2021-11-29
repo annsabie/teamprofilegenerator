@@ -1,123 +1,198 @@
 const inquirer = require("inquirer");
 const fs = require("fs");
 
-inquirer.prompt([
-        {
-        type: "input",
-        message: "What is the team manager's name?",
-        name: "managername",   
-        },
-        {
-        type: "input",
-        message: "What is the team manager's employee id?",
-        name: "managerid",   
-        },
-        {
-        type: "input",
-        message: "What is the team manager's email address?",
-        name: "manageremail",
-        },
-        {
-        type: "input",
-        message: "What is the team manager's office number?",
-        name: "manageroffice",
-        },
-        {
-        type: "list",
-        message: "Please choose member role.",
-        choices: ["Engineer", "Intern"],
-        name: "role"
-        },
-        {
-        type: "input",
-        message: "What is the member's name?",
-        name: "membername",
-        },
-        {
-        type: "input",
-        message: "What is the member's id number?",
-        name: "memberid",
-        },
-        {
-        type: "input",
-        message: "What is the member's email address?",
-        name: "memberemail",
-        },
-        {
-        type: "input",
-        message: "What is the member's GitHub username?",
-        name: "memberGithub",
-        },
-        {
-        type: "input",
-        message: "What is the intern's school?",
-        name: "school",
-        when: (input) => input.role === "Intern",
-        },
-        {
+const Employee = require("./models/Employee");
+const Engineer = require("./models/Engineer");
+const Intern = require("./models/Intern");
+const Manager = require("./models/Manager");
+
+let team = [];
+
+const questions = [
+  {
+    type: "input",
+    message: "Please enter employee name: ",
+    name: "name"
+  },
+  {
+    type: "input",
+    message: "Please enter employee email address: ",
+    name: "email"
+  },
+  {
+    type: "input",
+    message: "Please enter employee ID: ",
+    name: "id"
+  },
+  {
+    type: "list",
+    message: "Please select job title (role): ",
+    name: "role",
+    choices: ["Manager", "Engineer", "Intern"]
+  }
+];
+
+function addAdtl() {
+  inquirer
+    .prompt([
+      {
         type: "confirm",
-        message: "Would you like to add another member?",
-        name: "confirmadd",
-        },
-        
-    ]) 
-
-    .then((response) => {
-        const managerName = response.managername
-        const managerId = response.managerid
-        const managerEmail = response.manageremail
-        const managerOffice = response.manageroffice
-        const memberRole = response.role
-        const memberName = response.membername 
-        const memberID = response.memberid 
-        const memberEmail = response.memberemail 
-        const memberGithub = response.memberGithub
-        const memberSchool = response.school
-
-        const teamProfile = `<!DOCTYPE HTML>
-        <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>portfolio</title>
-    <link rel='stylesheet' href='./style.css'/>
-</head>
-<body>
-    <header>
-        <h1>${managerName}</h1>
-        <h2>${managerId}</h2>
-        <h3>${managerEmail}</h3>
-        <h4>${managerOffice}
-        <img src="./images/ET.png">
-    </header>
-
-    <div>
-        <h3>ABOUT ME</h3>
-        <p class='bio'>${memberRole}</p>
-        <p class='bio'>${memberName}</p>
-        <p class='bio'>${memberID}</p>
-        <p class='bio'>${memberEmail}</p>
-        <p class='bio'>${memberGithub}</p>
-        <p class='bio'>${memberSchool}</p>
-    </div>
-
-    <footer>
-    </footer>
-</body>
-</html>`
-
-
-fs.writeFile("index.html", teamProfile, err => {
-    err ? console.log("oops") : console.log("yay")
-})
+        message: "Would you like to add another team member?",
+        name: "addEmployee",
+      }
+    ])
+    .then(response => {
+      if (response.addEmployee === true) {
+        init(team)
+      } else {
+        generateHtml()
+      }
     })
-  
+};
 
+function init() {
+  inquirer
+    .prompt(questions)
+    .then(answers => {
+      if (answers.role === "Manager") {
+        inquirer
+          .prompt([
+            {
+              type: "input",
+              message: "Please enter office number: ",
+              name: "office"
+            }
+          ])
+          .then(response => {
+            const TeamManager = new Manager(answers.name, answers.id, answers.email, answers.role, response.office)
+            team.push(TeamManager)
+            addAdtl()
+          });
+      } else if (answers.role === "Engineer") {
+        inquirer
+          .prompt([
+            {
+              type: "input",
+              message: "Please enter GitHub username: ",
+              name: "github"
+            }
+          ])
+          .then(response => {
+            const EngineerOnTeam = new Engineer(answers.name, answers.id, answers.email, answers.role, response.github)
+            team.push(EngineerOnTeam)
+            addAdtl()
+          });
+      } else if (answers.role === "Intern") {
+        inquirer
+          .prompt([
+            {
+              type: "input",
+              message: "Please enter school name: ",
+              name: "school"
+            }
+          ])
+          .then(response => {
+            const InternOnTeam = new Intern(answers.name, answers.id, answers.email, answers.role, response.school)
+            team.push(InternOnTeam)
+            addAdtl()
+          })
+      } else {
+        return
+      }
+    })
+};
 
+function managerCard(data) {
+  return `
+  <div class="card" style="width: 18rem;">
+    <div class="card-body">
+      <h3 id="employee-name" class="card-title">${data.name}</h3>
+      <h5 id="employee-role" class="card-subtitle">${data.role}</h5>
+      <p id="employee-id" class="card-text">Employee ID: ${data.id}</p>
+      <p id="employee-office" class="card-text">Office: ${data.office}</p>
+      <p id="employee-email" class="card-text"><a href="mailto:${data.email}">Email: ${data.email}</a>
+    </div>
+  </div>`
+}
+function engineerCard(data) {
+  return `
+  <div class="card" style="width: 18rem;">
+    <div class="card-body">
+      <h3 id="employee-name" class="card-title">${data.name}</h3>
+      <h5 id="employee-role" class="card-subtitle">${data.role}</h5>
+      <p id="employee-id" class="card-text">Employee ID: ${data.id}</p>
+      <p id="employee-github" class="card-text">GitHub: ${data.github}</p>
+      <p id="employee-email" class="card-text"><a href="mailto:${data.email}">Email: ${data.email}</a>
+    </div>
+  </div>`
+}
+function internCard(data) {
+  return `
+  <div class="card" style="width: 18rem;">
+    <div class="card-body">
+      <h3 id="employee-name" class="card-title">${data.name}</h3>
+      <h5 id="employee-role" class="card-subtitle">${data.role}</h5>
+      <p id="employee-id" class="card-text">Employee ID: ${data.id}</p>
+      <p id="employee-school" class="card-text">School: ${data.school}</p>
+      <p id="employee-email" class="card-text"><a href="mailto:${data.email}">Email: ${data.email}</a>
+    </div>
+  </div>`
+}
 
+function generateHtml(role) {
 
+  let builtHtmlCards = ''
 
+  for (let index = 0; index < team.length; index++) {
+    const employee = team[index];
+    console.log(employee)
+    if (employee.role === "Manager") {
+      builtHtmlCards += managerCard(employee)
+    } else if (employee.role === "Engineer") {
+      builtHtmlCards += engineerCard(employee)
+    } else if (employee.role === "Intern") {
+      builtHtmlCards += internCard(employee)
+    }
+  }
+
+  const finalHtml = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
+      <link rel="stylesheet" type="text/css" href="./index.css">
+      <title>Team Profile</title>
+    </head>
+    <body>
+      <header class="container-fliud">
+        <nav class="navbar navbar-dark bg-info justify-content-center">
+          <h1>Team Profile</h1>
+        </nav>
+      </header>
+      <main>
+        <div class="container-fluid row col-12">
+            <div class="card-deck container-fluid row" id="deck">
+              ${builtHtmlCards}
+            </div>
+        </div>
+      </main>
+      
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    </body>
+    </html>`
+  writeFinalHtml(finalHtml);
+};
+
+function writeFinalHtml(finalHtml) {
+  fs.writeFile("./index.html", finalHtml, err => {
+      err ? console.log("Error... Something went wrong.") : console.log("Successfully generated index.html file!");
+  })
+};
+
+init();
     
 
 
